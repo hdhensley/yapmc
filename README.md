@@ -20,11 +20,11 @@ A privacy-focused, desktop API client built with Java Swing. Test REST APIs, man
 
 ### System Requirements
 
-- **Java**: JDK 17 or higher
+- **Java**: JDK 17 or higher (JDK 25 recommended for building)
   - Check your Java version: `java -version`
   - Download from [Oracle](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
 
-- **Maven**: Version 3.6 or higher
+- **Maven**: Version 3.6 or higher (only needed for building from source)
   - Used for dependency management and building the project
   - Check your Maven version: `mvn -version`
 
@@ -48,30 +48,49 @@ All dependencies are automatically managed by Maven. The project uses:
 
 ### Installation
 
+#### Option 1: Download Pre-built Installers (Recommended)
+
+Download the latest release for your operating system from the [Releases](https://github.com/hdhensley/yapmc/releases) page:
+
+- **Windows**: `YAPMC-1.0.exe` - Double-click to install
+- **macOS**: `YAPMC-1.0.dmg` - Open and drag to Applications folder
+- **Linux**: `yapmc_1.0-1_amd64.deb` - Install with `sudo dpkg -i yapmc_1.0-1_amd64.deb`
+
+The installers include a custom JRE, so you don't need Java installed on your system!
+
+#### Option 2: Run the JAR File
+
+If you have Java 17+ installed, you can download and run the JAR directly:
+
+```bash
+java -jar yapmc-1.0-SNAPSHOT.jar
+```
+
+#### Option 3: Build from Source
+
 1. **Clone the repository:**
    ```bash
-   git clone git@github.com:hdhensley/yapmc.git
+   git clone https://github.com/hdhensley/yapmc.git
    cd yapmc
    ```
 
 2. **Build the project:**
    ```bash
-   ./mvnw clean compile
+   ./mvnw clean package
    ```
    
    On Windows, use:
    ```cmd
-   mvnw.cmd clean compile
+   mvnw.cmd clean package
    ```
 
 3. **Run the application:**
    ```bash
-   ./mvnw exec:java -Dexec.mainClass="com.overzealouspelican.Main"
+   ./mvnw exec:java
    ```
    
-   Or package and run as a JAR:
+   Or run the JAR directly:
    ```bash
-   ./mvnw clean package
    java -jar target/yapmc-1.0-SNAPSHOT.jar
    ```
 
@@ -203,6 +222,61 @@ The application follows SOLID principles with a modular design:
 - **Status Bar**: Real-time status updates
 - **Call Output Window**: Detailed response viewer with JSON formatting
 - **Settings Window**: Theme selection and storage location configuration
+
+## 🏗️ Building Installers
+
+The project uses GitHub Actions with `jlink` and `jpackage` to create native installers for all platforms.
+
+### Automated Builds (via GitHub Actions)
+
+To trigger a release build:
+
+1. Tag your commit: `git tag v1.0.0`
+2. Push the tag: `git push origin v1.0.0`
+3. GitHub Actions will automatically build installers for Windows, macOS, and Linux
+4. Installers will be attached to the GitHub Release
+
+### Manual Local Build
+
+To create an installer on your local machine:
+
+```bash
+# Build the project
+mvn clean package
+
+# Create a custom JRE with jlink
+jlink \
+  --add-modules java.base,java.desktop,java.prefs,java.logging,java.net.http,java.naming \
+  --output target/runtime \
+  --strip-debug \
+  --no-man-pages \
+  --no-header-files \
+  --compress=2
+
+# Create the installer with jpackage
+jpackage \
+  --runtime-image target/runtime \
+  --input target \
+  --name YAPMC \
+  --main-jar yapmc-1.0-SNAPSHOT.jar \
+  --main-class com.overzealouspelican.Main \
+  --type dmg \
+  --app-version 1.0 \
+  --vendor "YAPMC" \
+  --description "Privacy-focused desktop API client"
+```
+
+Replace `--type dmg` with:
+- `exe` for Windows
+- `deb` or `rpm` for Linux
+- `dmg` or `pkg` for macOS
+
+### Benefits of jlink + jpackage
+
+- **Self-contained**: Installers include a custom JRE (no Java installation required)
+- **Small size**: jlink creates a minimal runtime (~50-70% smaller than full JDK)
+- **Native experience**: Users get familiar installation process for their OS
+- **Automatic updates**: Easy to distribute new versions
 
 ## 🔐 Security Note
 
