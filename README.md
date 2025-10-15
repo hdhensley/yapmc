@@ -1,34 +1,27 @@
-# YAPMC - Yet Another Postman Clone
+# YAPMC
 
-A lightweight, privacy-focused API testing tool built with Java Swing. YAPMC provides a clean interface for making HTTP requests, managing environments, and organizing API calls - all while keeping your data completely local and private.
-
-## 🔒 Privacy First
-
-**All data is stored locally on your machine.** YAPMC does not transmit, upload, or share any of your API calls, environment variables, headers, or response data with external services. Everything stays on your computer.
-
-- Environment variables are saved to: `~/Library/Application Support/YAPMC/` (macOS) or `~/.yapmc/` (Linux) or `%APPDATA%\YAPMC\` (Windows)
-- API calls are saved to: `~/Library/Application Support/YAPMC/api-calls.json`
-- No telemetry, no analytics, no external connections (except the API calls you explicitly make)
+A privacy-focused, desktop API client built with Java Swing. Test REST APIs, manage environments, and organize your API calls - all stored locally on your machine.
 
 ## ✨ Features
 
-- **HTTP Request Testing**: Support for GET, POST, PUT, DELETE, PATCH, HEAD, and OPTIONS methods
-- **Environment Management**: Create and manage multiple environments (Development, Staging, Production, etc.)
-- **Environment Variables**: Use `{{variableName}}` placeholders in URLs, headers, and body parameters
-- **Request Organization**: Save and organize your API calls for easy reuse
-- **HAR File Import**: Import API calls from browser HAR (HTTP Archive) files
-- **Response Formatting**: Automatic JSON pretty-printing for responses
-- **Headers & Body**: Flexible key-value input for headers and request body parameters
-- **Call History**: View detailed output including request details, environment variables, and responses
+- **🔒 Privacy First**: All data stored locally - no cloud, no tracking, no accounts
+- **🌍 Environment Management**: Easily switch between Dev, Staging, Production, etc.
+- **💾 Persistent Storage**: API calls and environments saved locally as JSON
+- **📦 HAR Import**: Import API calls directly from browser HAR files
+- **🎨 Customizable Themes**: Choose from multiple FlatLaf themes to personalize your workspace
+- **⚙️ Configurable Storage**: Set custom storage locations for your JSON files
+- **🔄 Variable Substitution**: Use environment variables in URLs, headers, and body
+- **📊 Response Viewer**: Formatted JSON responses with status codes and timing
+- **🚀 Modern UI**: Clean, responsive interface built with FlatLaf
 
-## 🛠️ Technology Stack
+## 🛠️ Requirements
 
-### Required Software
+### System Requirements
 
-- **Java**: Version 11 or higher (tested with Java 25)
-  - The application uses the modern `HttpClient` API introduced in Java 11
+- **Java**: JDK 17 or higher
   - Check your Java version: `java -version`
-  
+  - Download from [Oracle](https://www.oracle.com/java/technologies/downloads/) or [OpenJDK](https://openjdk.org/)
+
 - **Maven**: Version 3.6 or higher
   - Used for dependency management and building the project
   - Check your Maven version: `mvn -version`
@@ -37,8 +30,11 @@ A lightweight, privacy-focused API testing tool built with Java Swing. YAPMC pro
 
 All dependencies are automatically managed by Maven. The project uses:
 
-- **FlatLaf** (3.2.5): Modern, flat look and feel for Swing applications
+- **FlatLaf** (3.6.2): Modern, flat look and feel for Swing applications
   - Provides a contemporary UI that works across all platforms
+  
+- **FlatLaf IntelliJ Themes** (3.6.2): Additional theme options
+  - Includes popular themes like Darcula and IntelliJ Light
   
 - **GSON** (2.10.1): JSON parsing and serialization
   - Used for reading/writing configuration files and parsing JSON responses
@@ -100,6 +96,12 @@ All dependencies are automatically managed by Maven. The project uses:
    - Choose which request to import
    - The call will be saved with the filename as its name
 
+5. **Customize Settings**:
+   - Click the "Settings" button in the top-right
+   - Choose your preferred theme from the dropdown
+   - Optionally set a custom storage location for your JSON files
+   - Click "Save" to apply changes
+
 ## 📁 Project Structure
 
 ```
@@ -115,7 +117,7 @@ yapmc/
 │   │   │   ├── frame/                         # Dialog windows
 │   │   │   │   ├── CallOutputFrame.java       # Response display window
 │   │   │   │   ├── EnvironmentFrame.java      # Environment management
-│   │   │   │   └── ImportFrame.java           # HAR file import
+│   │   │   │   ��── ImportFrame.java           # HAR file import
 │   │   │   ├── model/                         # Data models
 │   │   │   │   ├── ApiCall.java               # API call configuration
 │   │   │   │   ├── ApplicationState.java      # Global app state
@@ -142,34 +144,63 @@ yapmc/
 
 ## 🔧 Configuration
 
+### Settings
+
+Access application settings by clicking the "Settings" button in the control panel.
+
+#### Theme Selection
+
+Choose from four built-in themes:
+- **FlatLaf Light**: Clean, bright interface (default)
+- **FlatLaf Dark**: Easy on the eyes for extended use
+- **FlatLaf IntelliJ**: Familiar IntelliJ IDEA light theme
+- **FlatLaf Darcula**: Popular dark theme from IntelliJ
+
+Themes are applied immediately and saved for future sessions.
+
+#### Storage Location
+
+By default, YAPMC stores data in OS-specific locations (see below). You can customize this:
+
+1. Click "Settings" → "Browse..." to select a custom directory
+2. Leave blank to use the default location
+3. The app will offer to create the directory if it doesn't exist
+4. Restart the application for the new location to take effect
+
+**Note**: Changing storage location does not migrate existing data. You'll need to manually copy `environments.json` and `api-calls.json` to the new location if desired.
+
+#### Reset Settings
+
+Use the "Reset to Defaults" button to restore:
+- Default theme (FlatLaf Light)
+- Default storage location
+
 ### Data Storage Locations
+
+**Default locations (when no custom location is set):**
 
 - **macOS**: `~/Library/Application Support/YAPMC/`
 - **Linux**: `~/.yapmc/`
 - **Windows**: `%APPDATA%\YAPMC\`
 
-Files stored:
+**Files stored:**
 - `environments.json` - Environment configurations with variables
 - `api-calls.json` - Saved API call configurations
 
-### Environment Variables
-
-Use double curly braces to reference environment variables in:
-- URLs: `{{baseUrl}}/api/v1/users`
-- Headers: `Authorization: Bearer {{apiToken}}`
-- Body parameters: `user_id: {{userId}}`
-
-Variables are substituted at runtime when you execute a call.
+**Settings persistence:**
+- Application settings (theme, storage location) are stored using Java Preferences API
+- These settings are separate from your API call data
 
 ## 🎨 User Interface
 
 The application follows SOLID principles with a modular design:
 
-- **Control Panel**: Environment selection and management
+- **Control Panel**: Environment selection, manage environments, and application settings
 - **URL Information Panel**: Main form for configuring API calls
-- **Saved Calls Sidebar**: Quick access to saved API calls
+- **Saved Calls Sidebar**: Quick access to saved API calls with import functionality
 - **Status Bar**: Real-time status updates
 - **Call Output Window**: Detailed response viewer with JSON formatting
+- **Settings Window**: Theme selection and storage location configuration
 
 ## 🔐 Security Note
 
