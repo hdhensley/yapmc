@@ -3,16 +3,20 @@ package com.overzealouspelican.panel;
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
+import java.util.List;
 import com.overzealouspelican.model.ApiCall;
 import com.overzealouspelican.model.ApplicationState;
 import com.overzealouspelican.service.ApiCallService;
 import com.overzealouspelican.frame.ImportFrame;
 
 /**
- * Modern IntelliJ-style saved calls panel.
+ * Modern IntelliJ-style saved calls panel with drag-and-drop grouping support.
  */
 public class UrlPanel extends JPanel {
 
@@ -20,10 +24,12 @@ public class UrlPanel extends JPanel {
     private ApplicationState appState;
     private JPanel listPanel;
     private CallConfigurationPanel configPanel;
+    private Map<String, Boolean> groupExpandedState;
 
     public UrlPanel() {
         this.apiCallService = new ApiCallService();
         this.appState = ApplicationState.getInstance();
+        this.groupExpandedState = new HashMap<>();
         initializePanel();
         setupListeners();
     }
@@ -65,7 +71,6 @@ public class UrlPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Remove the right border since we're stacking vertically now
         setPreferredSize(new Dimension(320, 0));
 
         loadApiCallsList();
@@ -88,23 +93,140 @@ public class UrlPanel extends JPanel {
         listPanel.removeAll();
         Map<String, ApiCall> apiCalls = apiCallService.loadApiCalls();
 
+        // Organize API calls by group
+        Map<String, List<String>> groups = new LinkedHashMap<>();
+        List<String> ungrouped = new ArrayList<>();
+
         for (Map.Entry<String, ApiCall> entry : apiCalls.entrySet()) {
             String name = entry.getKey();
-            listPanel.add(createApiCallItem(name));
+            String groupName = entry.getValue().getGroupName();
+
+            if (groupName != null && !groupName.trim().isEmpty()) {
+                groups.computeIfAbsent(groupName, k -> new ArrayList<>()).add(name);
+            } else {
+                ungrouped.add(name);
+            }
+        }
+
+        // Add grouped items
+        for (Map.Entry<String, List<String>> group : groups.entrySet()) {
+            String groupName = group.getKey();
+            List<String> members = group.getValue();
+            listPanel.add(createGroupHeader(groupName, members));
+
+            boolean expanded = groupExpandedState.getOrDefault(groupName, true);
+            if (expanded) {
+                for (String memberName : members) {
+                    listPanel.add(createApiCallItem(memberName, groupName));
+                }
+            }
+        }
+
+        // Add ungrouped items
+        for (String name : ungrouped) {
+            listPanel.add(createApiCallItem(name, null));
         }
 
         listPanel.revalidate();
         listPanel.repaint();
     }
 
-    private JPanel createApiCallItem(String name) {
+    private JPanel createGroupHeader(String groupName, List<String> members) {
+        JPanel headerPanel = new JPanel(new BorderLayout(6, 0));
+        headerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        headerPanel.setBackground(UIManager.getColor("Panel.background"));
+        headerPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        boolean expanded = groupExpandedState.getOrDefault(groupName, true);
+
+        // Expand/collapse icon
+        JLabel iconLabel = new JLabel(expanded ? "▼" : "▶");
+        iconLabel.setFont(iconLabel.getFont().deriveFont(10f));
+        headerPanel.add(iconLabel, BorderLayout.WEST);
+
+        // Group name
+        JLabel nameLabel = new JLabel(groupName + " (" + members.size() + ")");
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 12f));
+        headerPanel.add(nameLabel, BorderLayout.CENTER);
+
+        // Click to expand/collapse
+        headerPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                groupExpandedState.put(groupName, !groupExpandedState.getOrDefault(groupName, true));
+                loadApiCallsList();
+            }
+
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                headerPanel.setBackground(UIManager.getColor("List.selectionBackground"));
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                headerPanel.setBackground(UIManager.getColor("Panel.background"));
+            }
+        });
+
+        // Setup drop target for the group header
+        new DropTarget(headerPanel, new DropTargetAdapter() {
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+                    dtde.acceptDrop(DnDConstants.ACTION_MOVE);
+                    Transferable transferable = dtde.getTransferable();
+                    String draggedName = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+
+                    // Add to this group
+                    addApiCallToGroup(draggedName, groupName);
+                    dtde.dropComplete(true);
+                    loadApiCallsList();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    dtde.dropComplete(false);
+                }
+            }
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde) {
+                headerPanel.setBackground(new Color(100, 150, 255, 50));
+            }
+
+            @Override
+            public void dragExit(DropTargetEvent dte) {
+                headerPanel.setBackground(UIManager.getColor("Panel.background"));
+            }
+        });
+
+        return headerPanel;
+    }
+
+    private JPanel createApiCallItem(String name, String groupName) {
         JPanel itemPanel = new JPanel(new BorderLayout(6, 0));
         itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-        itemPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        int leftPadding = groupName != null ? 24 : 8;
+        itemPanel.setBorder(BorderFactory.createEmptyBorder(0, leftPadding, 0, 8));
         itemPanel.setBackground(UIManager.getColor("Panel.background"));
-
-        // Make the panel clickable
         itemPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // API call name label
+        JLabel nameLabel = new JLabel(name);
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.PLAIN, 12f));
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(6, 4, 6, 4));
+        itemPanel.add(nameLabel, BorderLayout.CENTER);
+
+        // Delete button
+        JButton deleteButton = new JButton("×");
+        deleteButton.setPreferredSize(new Dimension(28, 24));
+        deleteButton.setToolTipText("Delete this saved call");
+        deleteButton.setFocusPainted(false);
+        deleteButton.setFont(deleteButton.getFont().deriveFont(16f));
+        deleteButton.setMargin(new Insets(0, 0, 0, 0));
+        deleteButton.addActionListener(e -> deleteApiCall(name));
+        itemPanel.add(deleteButton, BorderLayout.EAST);
+
+        // Click to load
         itemPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             private Color originalBg = UIManager.getColor("Panel.background");
 
@@ -124,26 +246,115 @@ public class UrlPanel extends JPanel {
             }
         });
 
-        // API call name label
-        JLabel nameLabel = new JLabel(name);
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.PLAIN, 12f));
-        nameLabel.setBorder(BorderFactory.createEmptyBorder(6, 4, 6, 4));
-        itemPanel.add(nameLabel, BorderLayout.CENTER);
+        // Setup drag source
+        DragSource dragSource = new DragSource();
+        dragSource.createDefaultDragGestureRecognizer(itemPanel, DnDConstants.ACTION_MOVE,
+            new DragGestureListener() {
+                @Override
+                public void dragGestureRecognized(DragGestureEvent dge) {
+                    Transferable transferable = new StringSelection(name);
+                    dragSource.startDrag(dge, DragSource.DefaultMoveDrop, transferable, null);
+                }
+            }
+        );
 
-        // Delete button
-        JButton deleteButton = new JButton("×");
-        deleteButton.setPreferredSize(new Dimension(28, 24));
-        deleteButton.setToolTipText("Delete this saved call");
-        deleteButton.setFocusPainted(false);
-        deleteButton.setFont(deleteButton.getFont().deriveFont(16f));
-        deleteButton.setMargin(new Insets(0, 0, 0, 0));
-        deleteButton.addActionListener(e -> {
-            // Stop event propagation to prevent triggering the panel click
-            deleteApiCall(name);
+        // Setup drop target
+        new DropTarget(itemPanel, new DropTargetAdapter() {
+            @Override
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+                    dtde.acceptDrop(DnDConstants.ACTION_MOVE);
+                    Transferable transferable = dtde.getTransferable();
+                    String draggedName = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+
+                    if (!draggedName.equals(name)) {
+                        handleDrop(draggedName, name);
+                    }
+                    dtde.dropComplete(true);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    dtde.dropComplete(false);
+                }
+            }
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde) {
+                itemPanel.setBackground(new Color(100, 150, 255, 50));
+            }
+
+            @Override
+            public void dragExit(DropTargetEvent dte) {
+                itemPanel.setBackground(UIManager.getColor("Panel.background"));
+            }
         });
-        itemPanel.add(deleteButton, BorderLayout.EAST);
 
         return itemPanel;
+    }
+
+    private void handleDrop(String draggedName, String targetName) {
+        try {
+            Map<String, ApiCall> apiCalls = apiCallService.loadApiCalls();
+            ApiCall draggedCall = apiCalls.get(draggedName);
+            ApiCall targetCall = apiCalls.get(targetName);
+
+            if (draggedCall == null || targetCall == null) {
+                return;
+            }
+
+            String draggedGroup = draggedCall.getGroupName();
+            String targetGroup = targetCall.getGroupName();
+
+            // If dragged is a group member and target is a group member of different group, don't allow
+            if (draggedGroup != null && targetGroup != null && !draggedGroup.equals(targetGroup)) {
+                JOptionPane.showMessageDialog(this,
+                    "Cannot nest groups. Please remove from current group first.",
+                    "Invalid Operation",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // If target is in a group, add dragged to same group
+            if (targetGroup != null && !targetGroup.trim().isEmpty()) {
+                addApiCallToGroup(draggedName, targetGroup);
+            } else {
+                // Create new group or add to existing
+                String groupName;
+                if (draggedGroup != null && !draggedGroup.trim().isEmpty()) {
+                    // Dragged is already in a group, add target to that group
+                    addApiCallToGroup(targetName, draggedGroup);
+                } else {
+                    // Neither in a group, prompt for new group name
+                    groupName = JOptionPane.showInputDialog(this,
+                        "Enter a name for the new group:",
+                        "Create Group",
+                        JOptionPane.PLAIN_MESSAGE);
+
+                    if (groupName != null && !groupName.trim().isEmpty()) {
+                        addApiCallToGroup(draggedName, groupName);
+                        addApiCallToGroup(targetName, groupName);
+                    }
+                }
+            }
+
+            loadApiCallsList();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Failed to group API calls: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void addApiCallToGroup(String apiCallName, String groupName) throws IOException {
+        Map<String, ApiCall> apiCalls = apiCallService.loadApiCalls();
+        ApiCall apiCall = apiCalls.get(apiCallName);
+
+        if (apiCall != null) {
+            apiCall.setGroupName(groupName);
+            apiCallService.saveApiCall(apiCall);
+            appState.setStatusSuccess("Added '" + apiCallName + "' to group '" + groupName + "'");
+        }
     }
 
     private void loadApiCall(String name) {

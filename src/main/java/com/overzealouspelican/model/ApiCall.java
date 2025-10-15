@@ -12,6 +12,7 @@ public class ApiCall {
     private String httpMethod;
     private Map<String, String> headers;
     private Map<String, String> body;
+    private String groupName; // Group this API call belongs to
 
     public ApiCall() {
         this.headers = new HashMap<>();
@@ -66,9 +67,16 @@ public class ApiCall {
         this.body = body != null ? new HashMap<>(body) : new HashMap<>();
     }
 
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
+
     @Override
     public String toString() {
         return "ApiCall{name='" + name + "', url='" + url + "', method='" + httpMethod + "'}";
     }
 }
-
