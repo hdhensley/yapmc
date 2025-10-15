@@ -11,6 +11,9 @@ import com.overzealouspelican.model.ApplicationState;
 import com.overzealouspelican.service.ApiCallService;
 import com.overzealouspelican.frame.ImportFrame;
 
+/**
+ * Modern IntelliJ-style saved calls panel.
+ */
 public class UrlPanel extends JPanel {
 
     private ApiCallService apiCallService;
@@ -27,57 +30,51 @@ public class UrlPanel extends JPanel {
 
     private void initializePanel() {
         setLayout(new BorderLayout());
+        setBackground(UIManager.getColor("Panel.background"));
 
-        // Title panel with label and import button
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        titlePanel.setBackground(UIManager.getColor("Panel.background"));
+        // Modern toolbar
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Component.borderColor")),
+            BorderFactory.createEmptyBorder(10, 12, 10, 12)
+        ));
+        toolbar.setBackground(UIManager.getColor("Panel.background"));
 
         JLabel titleLabel = new JLabel("Saved Calls");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 12f));
-        titlePanel.add(titleLabel, BorderLayout.WEST);
+        toolbar.add(titleLabel, BorderLayout.WEST);
 
         // Import button
         JButton importButton = new JButton("Import");
         importButton.setToolTipText("Import an API call from JSON file");
-        importButton.setFont(importButton.getFont().deriveFont(10f));
+        importButton.setFont(importButton.getFont().deriveFont(11f));
         importButton.addActionListener(e -> openImportFrame());
-        titlePanel.add(importButton, BorderLayout.EAST);
+        toolbar.add(importButton, BorderLayout.EAST);
 
-        add(titlePanel, BorderLayout.NORTH);
+        add(toolbar, BorderLayout.NORTH);
 
         // Create scrollable panel for API call items
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBackground(UIManager.getColor("Panel.background"));
+        listPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
 
         JScrollPane scrollPane = new JScrollPane(listPanel);
+        scrollPane.setBorder(null);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Use UIManager colors that adapt to FlatLaf themes
-        setBackground(UIManager.getColor("Panel.background"));
+        // Remove the right border since we're stacking vertically now
+        setPreferredSize(new Dimension(320, 0));
 
-        // Add a right border to indicate this panel is resizable
-        setBorder(new MatteBorder(0, 0, 0, 1, UIManager.getColor("Component.borderColor")));
-
-        setPreferredSize(new Dimension(200, 0));
-
-        // Load saved API calls
         loadApiCallsList();
     }
 
-    /**
-     * Set the configuration panel that will be updated when an API call is selected
-     */
     public void setConfigurationPanel(CallConfigurationPanel configPanel) {
         this.configPanel = configPanel;
     }
 
-    /**
-     * Setup listeners for when new API calls are saved
-     */
     private void setupListeners() {
         appState.addPropertyChangeListener("apiCallSaved", new PropertyChangeListener() {
             @Override
@@ -87,9 +84,6 @@ public class UrlPanel extends JPanel {
         });
     }
 
-    /**
-     * Load all saved API calls into the list
-     */
     private void loadApiCallsList() {
         listPanel.removeAll();
         Map<String, ApiCall> apiCalls = apiCallService.loadApiCalls();
@@ -103,18 +97,17 @@ public class UrlPanel extends JPanel {
         listPanel.repaint();
     }
 
-    /**
-     * Create a panel for a single API call item with name and delete button
-     */
     private JPanel createApiCallItem(String name) {
-        JPanel itemPanel = new JPanel(new BorderLayout(5, 0));
-        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        itemPanel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+        JPanel itemPanel = new JPanel(new BorderLayout(6, 0));
+        itemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        itemPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         itemPanel.setBackground(UIManager.getColor("Panel.background"));
 
         // Make the panel clickable
         itemPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         itemPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            private Color originalBg = UIManager.getColor("Panel.background");
+
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 loadApiCall(name);
@@ -127,21 +120,25 @@ public class UrlPanel extends JPanel {
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                itemPanel.setBackground(UIManager.getColor("Panel.background"));
+                itemPanel.setBackground(originalBg);
             }
         });
 
         // API call name label
         JLabel nameLabel = new JLabel(name);
-        nameLabel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.PLAIN, 12f));
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(6, 4, 6, 4));
         itemPanel.add(nameLabel, BorderLayout.CENTER);
 
         // Delete button
-        JButton deleteButton = new JButton("✕");
-        deleteButton.setPreferredSize(new Dimension(30, 25));
+        JButton deleteButton = new JButton("×");
+        deleteButton.setPreferredSize(new Dimension(28, 24));
         deleteButton.setToolTipText("Delete this saved call");
         deleteButton.setFocusPainted(false);
+        deleteButton.setFont(deleteButton.getFont().deriveFont(16f));
+        deleteButton.setMargin(new Insets(0, 0, 0, 0));
         deleteButton.addActionListener(e -> {
+            // Stop event propagation to prevent triggering the panel click
             deleteApiCall(name);
         });
         itemPanel.add(deleteButton, BorderLayout.EAST);
@@ -149,9 +146,6 @@ public class UrlPanel extends JPanel {
         return itemPanel;
     }
 
-    /**
-     * Load the selected API call into the configuration panel
-     */
     private void loadApiCall(String name) {
         if (name == null || configPanel == null) return;
 
@@ -162,9 +156,6 @@ public class UrlPanel extends JPanel {
         }
     }
 
-    /**
-     * Delete an API call after confirmation
-     */
     private void deleteApiCall(String name) {
         int result = JOptionPane.showConfirmDialog(
             this,
@@ -180,9 +171,6 @@ public class UrlPanel extends JPanel {
                 appState.setStatusSuccess("Deleted: " + name);
                 loadApiCallsList();
             } catch (Exception e) {
-                System.err.println("Failed to delete API call: " + e.getMessage());
-                e.printStackTrace();
-
                 JOptionPane.showMessageDialog(
                     this,
                     "Failed to delete API call: " + e.getMessage(),
@@ -195,14 +183,10 @@ public class UrlPanel extends JPanel {
         }
     }
 
-    /**
-     * Open the import frame to import API calls from JSON files
-     */
     private void openImportFrame() {
         ImportFrame importFrame = new ImportFrame();
         importFrame.display();
 
-        // Refresh the list after the import frame is closed
         importFrame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosed(java.awt.event.WindowEvent e) {
@@ -211,9 +195,6 @@ public class UrlPanel extends JPanel {
         });
     }
 
-    /**
-     * Refresh the list of API calls
-     */
     public void refresh() {
         loadApiCallsList();
     }

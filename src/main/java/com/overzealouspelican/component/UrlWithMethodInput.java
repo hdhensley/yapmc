@@ -4,8 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Reusable component for URL input with HTTP method selector.
- * Follows Single Responsibility Principle - manages URL and HTTP method input.
+ * Reusable component for URL input with HTTP method selector with IntelliJ-style appearance.
  */
 public class UrlWithMethodInput extends JPanel {
 
@@ -25,27 +24,29 @@ public class UrlWithMethodInput extends JPanel {
 
     private void initializePanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setBackground(UIManager.getColor("Panel.background"));
 
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setFont(label.getFont().deriveFont(Font.PLAIN, 11f));
+        label.setForeground(UIManager.getColor("Label.foreground"));
 
         // Panel for URL field and dropdown on same line
-        JPanel urlInputPanel = new JPanel(new BorderLayout(10, 0));
-        urlInputPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        JPanel urlInputPanel = new JPanel(new BorderLayout(8, 0));
+        urlInputPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         urlInputPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         urlInputPanel.setBackground(UIManager.getColor("Panel.background"));
 
         urlField.setToolTipText("Enter the URL for this call");
-        httpMethodDropdown.setPreferredSize(new Dimension(100, 25));
+        httpMethodDropdown.setPreferredSize(new Dimension(100, 28));
         httpMethodDropdown.setToolTipText("Select HTTP method");
 
+        urlInputPanel.add(httpMethodDropdown, BorderLayout.WEST);
         urlInputPanel.add(urlField, BorderLayout.CENTER);
-        urlInputPanel.add(httpMethodDropdown, BorderLayout.EAST);
 
         add(label);
-        add(Box.createVerticalStrut(5));
+        add(Box.createVerticalStrut(4));
         add(urlInputPanel);
     }
 
@@ -65,4 +66,3 @@ public class UrlWithMethodInput extends JPanel {
         httpMethodDropdown.setSelectedItem(httpMethod);
     }
 }
-

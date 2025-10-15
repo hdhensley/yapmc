@@ -12,8 +12,7 @@ import com.overzealouspelican.frame.CallOutputFrame;
 import com.overzealouspelican.service.ApiCallService;
 
 /**
- * Call configuration panel in the main content area.
- * Refactored to follow SOLID principles with reusable components.
+ * Modern IntelliJ-style call configuration panel.
  */
 public class CallConfigurationPanel extends JPanel {
 
@@ -35,81 +34,87 @@ public class CallConfigurationPanel extends JPanel {
 
     private void initializePanel() {
         setLayout(new BorderLayout());
-
-        // Add title bar
-        add(createTitleBar(), BorderLayout.NORTH);
-
-        // Main content area
-        add(createContentPanel(), BorderLayout.CENTER);
-
         setBackground(UIManager.getColor("Panel.background"));
-        setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Component.borderColor")));
+
+        // Add modern toolbar
+        add(createToolbar(), BorderLayout.NORTH);
+
+        // Main content area with padding
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setBackground(UIManager.getColor("Panel.background"));
+        contentWrapper.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        JPanel contentPanel = createContentPanel();
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        contentWrapper.add(scrollPane, BorderLayout.CENTER);
+        add(contentWrapper, BorderLayout.CENTER);
     }
 
-    private JPanel createTitleBar() {
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBackground(UIManager.getColor("Panel.background"));
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new BorderLayout());
+        toolbar.setBackground(UIManager.getColor("Panel.background"));
+        toolbar.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Component.borderColor")),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createEmptyBorder(10, 16, 10, 16)
         ));
 
         // Left side - title
-        JLabel titleLabel = new JLabel("URL Information");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
-        titleBar.add(titleLabel, BorderLayout.WEST);
+        JLabel titleLabel = new JLabel("API Request");
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 13f));
+        toolbar.add(titleLabel, BorderLayout.WEST);
 
-        // Right side - buttons panel
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        // Right side - action buttons
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         buttonsPanel.setOpaque(false);
 
-        // Clear button
         clearButton = new JButton("Clear");
         clearButton.setToolTipText("Clear all form fields");
         clearButton.addActionListener(e -> handleClear());
-        buttonsPanel.add(clearButton);
 
-        // Call button
-        callButton = new JButton("Call");
+        callButton = new JButton("Send");
         callButton.setToolTipText("Execute the API call");
         callButton.addActionListener(e -> handleCall());
-        buttonsPanel.add(callButton);
 
-        // Save button
         saveButton = new JButton("Save");
-        saveButton.setToolTipText("Save the call configuration");
+        saveButton.setToolTipText("Save this API call");
         saveButton.addActionListener(e -> handleSave());
+
+        buttonsPanel.add(clearButton);
+        buttonsPanel.add(callButton);
         buttonsPanel.add(saveButton);
 
-        titleBar.add(buttonsPanel, BorderLayout.EAST);
+        toolbar.add(buttonsPanel, BorderLayout.EAST);
 
-        return titleBar;
+        return toolbar;
     }
 
     private JPanel createContentPanel() {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         contentPanel.setBackground(UIManager.getColor("Panel.background"));
 
         // Name input
         nameField = new LabeledTextField("Name", "Enter a name for this call");
         contentPanel.add(nameField);
-        contentPanel.add(Box.createVerticalStrut(5));
+        contentPanel.add(Box.createVerticalStrut(12));
 
         // URL input with HTTP method
         urlInput = new UrlWithMethodInput();
         contentPanel.add(urlInput);
-        contentPanel.add(Box.createVerticalStrut(5));
+        contentPanel.add(Box.createVerticalStrut(16));
 
         // Headers section
         headersGroup = new KeyValueInputGroup("Headers", "+ Add Header", "Remove this header");
         contentPanel.add(headersGroup);
-        contentPanel.add(Box.createVerticalStrut(5));
+        contentPanel.add(Box.createVerticalStrut(16));
 
         // Body section
         bodyGroup = new KeyValueInputGroup("Body", "+ Add Body Parameter", "Remove this body parameter");
         contentPanel.add(bodyGroup);
+        contentPanel.add(Box.createVerticalStrut(16));
 
         return contentPanel;
     }
@@ -141,15 +146,6 @@ public class CallConfigurationPanel extends JPanel {
         if (bodyDisplay.length() == 0) {
             bodyDisplay.append("(No body)");
         }
-
-        System.out.println("Call button clicked in CallConfigurationPanel");
-        System.out.println("Executing API call:");
-        System.out.println("  Environment: " + environment);
-        System.out.println("  Name: " + friendlyName);
-        System.out.println("  URL: " + url);
-        System.out.println("  HTTP Method: " + httpMethod);
-        System.out.println("  Headers: " + headersGroup.getKeyValuePairs());
-        System.out.println("  Body: " + bodyGroup.getKeyValuePairs());
 
         // Create ApiCall object
         ApiCall apiCall = new ApiCall(
@@ -218,14 +214,6 @@ public class CallConfigurationPanel extends JPanel {
 
             apiCallService.saveApiCall(apiCall);
 
-            System.out.println("Save button clicked in CallConfigurationPanel");
-            System.out.println("Friendly Name: " + friendlyName);
-            System.out.println("URL: " + url);
-            System.out.println("HTTP Method: " + httpMethod);
-            System.out.println("Headers: " + headersGroup.getKeyValuePairs());
-            System.out.println("Body: " + bodyGroup.getKeyValuePairs());
-            System.out.println("Saved to: " + apiCallService.getApiCallsFilePath());
-
             JOptionPane.showMessageDialog(this,
                 "API call saved successfully to:\n" + apiCallService.getApiCallsFilePath(),
                 "Success",
@@ -237,8 +225,6 @@ public class CallConfigurationPanel extends JPanel {
             // Notify that a new call was saved (fire property change)
             appState.firePropertyChange("apiCallSaved", null, friendlyName);
         } catch (Exception e) {
-            System.err.println("Failed to save API call: " + e.getMessage());
-            e.printStackTrace();
 
             JOptionPane.showMessageDialog(this,
                 "Failed to save API call: " + e.getMessage(),

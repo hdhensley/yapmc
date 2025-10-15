@@ -8,8 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Reusable component for key-value input pairs with add/remove functionality.
- * Follows Single Responsibility Principle - manages only key-value input rows.
+ * Reusable component for key-value input pairs with IntelliJ-style appearance.
  */
 public class KeyValueInputGroup extends JPanel {
 
@@ -42,78 +41,81 @@ public class KeyValueInputGroup extends JPanel {
         // Group label
         JLabel label = new JLabel(groupLabel);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 12f));
         add(label);
-        add(Box.createVerticalStrut(5));
+        add(Box.createVerticalStrut(8));
 
-        // Column labels with proper sizing
-        JPanel columnLabelsPanel = new JPanel(new BorderLayout(10, 0));
+        // Column labels
+        JPanel columnLabelsPanel = new JPanel(new BorderLayout(8, 0));
         columnLabelsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
         columnLabelsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         columnLabelsPanel.setBackground(UIManager.getColor("Panel.background"));
 
         JLabel keyLabel = new JLabel("Key");
-        keyLabel.setFont(keyLabel.getFont().deriveFont(Font.BOLD, 11f));
-        keyLabel.setPreferredSize(new Dimension(200, 20));
+        keyLabel.setFont(keyLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        keyLabel.setForeground(UIManager.getColor("Label.foreground"));
+        keyLabel.setPreferredSize(new Dimension(180, 20));
 
         JLabel valueLabel = new JLabel("Value");
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 11f));
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        valueLabel.setForeground(UIManager.getColor("Label.foreground"));
+
+        JLabel spacer = new JLabel("");
+        spacer.setPreferredSize(new Dimension(36, 20));
 
         columnLabelsPanel.add(keyLabel, BorderLayout.WEST);
         columnLabelsPanel.add(valueLabel, BorderLayout.CENTER);
-        // Add spacer for the remove button column
-        JLabel spacer = new JLabel(" ");
-        spacer.setPreferredSize(new Dimension(45, 20));
         columnLabelsPanel.add(spacer, BorderLayout.EAST);
 
         add(columnLabelsPanel);
-        add(Box.createVerticalStrut(5));
+        add(Box.createVerticalStrut(4));
 
         // Rows container with scroll
         rowsContainer.setLayout(new BoxLayout(rowsContainer, BoxLayout.Y_AXIS));
+        rowsContainer.setBackground(UIManager.getColor("Panel.background"));
         addRow(); // Start with 1 row
 
         JScrollPane scrollPane = new JScrollPane(rowsContainer);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        scrollPane.setPreferredSize(new Dimension(0, 100));
-        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
+        scrollPane.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setPreferredSize(new Dimension(0, 200));
+        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         add(scrollPane);
-        add(Box.createVerticalStrut(5));
+        add(Box.createVerticalStrut(8));
 
         // Add Row button
-        JPanel addButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        addButtonPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-        addButtonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        addButtonPanel.setBackground(UIManager.getColor("Panel.background"));
-
         JButton addRowButton = new JButton(addButtonText);
+        addRowButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        addRowButton.setMaximumSize(new Dimension(150, 28));
         addRowButton.addActionListener(e -> {
             addRow();
             rowsContainer.revalidate();
             rowsContainer.repaint();
         });
-        addButtonPanel.add(addRowButton);
-        add(addButtonPanel);
+        add(addRowButton);
     }
 
     private void addRow() {
-        JPanel rowPanel = new JPanel(new BorderLayout(5, 0));
-        rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        JPanel rowPanel = new JPanel(new BorderLayout(4, 0));
+        rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        rowPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        rowPanel.setBackground(UIManager.getColor("Panel.background"));
 
-        // Create key field with fixed width
         JTextField keyField = new JTextField();
-        keyField.setPreferredSize(new Dimension(200, 25));
-        keyField.setMinimumSize(new Dimension(200, 25));
-        keyField.setMaximumSize(new Dimension(200, 25));
+        keyField.setPreferredSize(new Dimension(180, 24));
+        keyField.setMinimumSize(new Dimension(180, 24));
+        keyField.setMaximumSize(new Dimension(180, 24));
 
-        // Create value field that takes remaining space
         JTextField valueField = new JTextField();
 
-        // Create remove button
-        JButton removeButton = new JButton("✕");
-        removeButton.setPreferredSize(new Dimension(45, 25));
+        JButton removeButton = new JButton("×");
+        removeButton.setPreferredSize(new Dimension(36, 24));
         removeButton.setToolTipText(removeTooltip);
+        removeButton.setFont(removeButton.getFont().deriveFont(16f));
+        removeButton.setMargin(new Insets(0, 0, 0, 0));
 
         keyFields.add(keyField);
         valueFields.add(valueField);
@@ -127,15 +129,10 @@ public class KeyValueInputGroup extends JPanel {
                 removeButtons.remove(index);
             }
 
-            // Find and remove the row panel from the container
             Component[] components = rowsContainer.getComponents();
             for (int i = 0; i < components.length; i++) {
                 if (components[i] == rowPanel) {
-                    rowsContainer.remove(i); // Remove the row panel
-                    // Remove the following vertical strut if it exists
-                    if (i < rowsContainer.getComponentCount()) {
-                        rowsContainer.remove(i);
-                    }
+                    rowsContainer.remove(i);
                     break;
                 }
             }
@@ -149,12 +146,8 @@ public class KeyValueInputGroup extends JPanel {
         rowPanel.add(removeButton, BorderLayout.EAST);
 
         rowsContainer.add(rowPanel);
-        rowsContainer.add(Box.createVerticalStrut(5));
     }
 
-    /**
-     * Get all non-empty key-value pairs as a Map.
-     */
     public Map<String, String> getKeyValuePairs() {
         Map<String, String> pairs = new HashMap<>();
         for (int i = 0; i < keyFields.size(); i++) {
@@ -168,19 +161,14 @@ public class KeyValueInputGroup extends JPanel {
         return pairs;
     }
 
-    /**
-     * Set key-value pairs from a Map.
-     */
     public void setKeyValuePairs(Map<String, String> pairs) {
-        // Clear existing rows
         rowsContainer.removeAll();
         keyFields.clear();
         valueFields.clear();
         removeButtons.clear();
 
-        // Add rows for each pair
         if (pairs.isEmpty()) {
-            addRow(); // At least one empty row
+            addRow();
         } else {
             for (Map.Entry<String, String> entry : pairs.entrySet()) {
                 addRow();
@@ -194,9 +182,6 @@ public class KeyValueInputGroup extends JPanel {
         rowsContainer.repaint();
     }
 
-    /**
-     * Clear all input fields.
-     */
     public void clear() {
         rowsContainer.removeAll();
         keyFields.clear();

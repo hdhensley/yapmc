@@ -4,8 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Reusable component for a labeled text input field.
- * Follows Single Responsibility Principle - manages a single labeled input.
+ * Reusable component for a labeled text input field with IntelliJ-style appearance.
  */
 public class LabeledTextField extends JPanel {
 
@@ -21,17 +20,21 @@ public class LabeledTextField extends JPanel {
 
     private void initializePanel(String tooltipText) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setBackground(UIManager.getColor("Panel.background"));
 
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setFont(label.getFont().deriveFont(Font.PLAIN, 11f));
+        label.setForeground(UIManager.getColor("Label.foreground"));
+
         textField.setToolTipText(tooltipText);
-        textField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        textField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        textField.setPreferredSize(new Dimension(0, 28));
         textField.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         add(label);
-        add(Box.createVerticalStrut(5));
+        add(Box.createVerticalStrut(4));
         add(textField);
     }
 
@@ -47,4 +50,3 @@ public class LabeledTextField extends JPanel {
         return textField;
     }
 }
-
