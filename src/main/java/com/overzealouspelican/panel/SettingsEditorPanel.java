@@ -294,4 +294,36 @@ public class SettingsEditorPanel extends JPanel {
     public static String getStorageLocation() {
         return prefs.get(STORAGE_LOCATION_KEY, "");
     }
+
+    /**
+     * Load and apply the saved theme at application startup
+     */
+    public static void loadAndApplyTheme() {
+        String savedThemeName = prefs.get(THEME_KEY, DEFAULT_THEME);
+        String themeClassName = getThemeClassName(savedThemeName);
+
+        if (themeClassName != null) {
+            try {
+                UIManager.setLookAndFeel(themeClassName);
+            } catch (Exception ex) {
+                System.err.println("Failed to load saved theme: " + ex.getMessage());
+                // Fall back to default
+                try {
+                    UIManager.setLookAndFeel(new FlatLightLaf());
+                } catch (Exception e) {
+                    System.err.println("Failed to load default theme");
+                }
+            }
+        }
+    }
+
+    private static String getThemeClassName(String displayName) {
+        ThemeOption[] themes = new SettingsEditorPanel().getAvailableThemes();
+        for (ThemeOption theme : themes) {
+            if (theme.displayName.equals(displayName)) {
+                return theme.className;
+            }
+        }
+        return null;
+    }
 }

@@ -228,8 +228,6 @@ public class UrlPanel extends JPanel {
 
         // Click to load
         itemPanel.addMouseListener(new java.awt.event.MouseAdapter() {
-            private Color originalBg = UIManager.getColor("Panel.background");
-
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 loadApiCall(name);
@@ -242,7 +240,7 @@ public class UrlPanel extends JPanel {
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                itemPanel.setBackground(originalBg);
+                itemPanel.setBackground(UIManager.getColor("Panel.background"));
             }
         });
 

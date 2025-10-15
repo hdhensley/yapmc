@@ -50,7 +50,7 @@ public class ApiCallService {
      */
     private Path getDataDirectory() {
         // Check if custom storage location is configured
-        String customLocation = com.overzealouspelican.frame.SettingsFrame.getStorageLocation();
+        String customLocation = com.overzealouspelican.panel.SettingsEditorPanel.getStorageLocation();
         if (customLocation != null && !customLocation.isEmpty()) {
             return Paths.get(customLocation);
         }

@@ -3,7 +3,7 @@ package com.overzealouspelican;
 import javax.swing.*;
 import com.formdev.flatlaf.FlatLightLaf;
 import com.overzealouspelican.frame.MainFrame;
-import com.overzealouspelican.frame.SettingsFrame;
+import com.overzealouspelican.panel.SettingsEditorPanel;
 
 /**
  * Application entry point.
@@ -12,7 +12,7 @@ import com.overzealouspelican.frame.SettingsFrame;
 public class Main {
     public static void main(String[] args) {
         // Load and apply saved theme before creating any UI
-        SettingsFrame.loadAndApplyTheme();
+        SettingsEditorPanel.loadAndApplyTheme();
 
         // Set FlatLaf Look and Feel as fallback if no theme is saved
         try {

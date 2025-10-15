@@ -6,7 +6,6 @@ import java.awt.*;
 import com.overzealouspelican.model.ApplicationState;
 import com.overzealouspelican.model.Environment;
 import com.overzealouspelican.service.EnvironmentService;
-import com.overzealouspelican.frame.SettingsFrame;
 
 /**
  * IntelliJ-style sidebar panel with collapsible sections for Environments and Settings.
