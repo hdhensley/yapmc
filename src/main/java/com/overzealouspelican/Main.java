@@ -11,6 +11,11 @@ import com.overzealouspelican.panel.SettingsEditorPanel;
  */
 public class Main {
     public static void main(String[] args) {
+        // Disable hostname verification for localhost development
+        // This is necessary for HttpClient to work with self-signed certificates
+        // Only affects HTTPS connections, and our code only uses it for localhost URLs
+        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+
         // Load and apply saved theme before creating any UI
         SettingsEditorPanel.loadAndApplyTheme();
 

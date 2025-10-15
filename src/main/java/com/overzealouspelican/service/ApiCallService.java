@@ -5,17 +5,25 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -161,6 +169,9 @@ public class ApiCallService {
      * Execute an API call with environment variable substitution
      */
     public HttpCallResult executeApiCall(ApiCall apiCall, Map<String, String> environmentVariables) {
+        String originalDisableHostnameVerification = null;
+        boolean modifiedSystemProperty = false;
+
         try {
             // Log environment variables for debugging
             System.out.println("Environment variables available: " + environmentVariables);
@@ -252,9 +263,38 @@ public class ApiCallService {
 
             HttpRequest request = requestBuilder.build();
 
+            // Choose the appropriate HTTP client based on URL
+            HttpClient clientToUse = httpClient;
+            boolean isLocalhost = isLocalhostUrl(resolvedUrl);
+
+            if (isLocalhost) {
+                System.out.println("Using insecure SSL context for localhost URL");
+
+                // Try to verify hostname resolution using system DNS
+                try {
+                    verifyHostnameResolution(resolvedUrl);
+
+                    // Temporarily disable SSL endpoint identification for localhost
+                    // This is the only way to disable hostname verification in HttpClient
+                    synchronized (ApiCallService.class) {
+                        originalDisableHostnameVerification = System.getProperty("jdk.internal.httpclient.disableHostnameVerification");
+                        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
+                        modifiedSystemProperty = true;
+                        System.out.println("Disabled hostname verification for localhost request");
+                    }
+
+                    clientToUse = createInsecureHttpClient();
+                } catch (UnknownHostException e) {
+                    System.out.println("Could not resolve hostname via system DNS, falling back to default client");
+                    // Fall back to default client if DNS resolution fails
+                    clientToUse = httpClient;
+                    modifiedSystemProperty = false;
+                }
+            }
+
             // Execute the request
             long startTime = System.currentTimeMillis();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = clientToUse.send(request, HttpResponse.BodyHandlers.ofString());
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
 
@@ -276,6 +316,97 @@ public class ApiCallService {
                 0,
                 e
             );
+        } finally {
+            // ALWAYS restore original system property if we changed it
+            if (modifiedSystemProperty) {
+                synchronized (ApiCallService.class) {
+                    if (originalDisableHostnameVerification != null) {
+                        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", originalDisableHostnameVerification);
+                    } else {
+                        System.clearProperty("jdk.internal.httpclient.disableHostnameVerification");
+                    }
+                    System.out.println("Restored hostname verification setting");
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if the URL is targeting localhost
+     */
+    private boolean isLocalhostUrl(String url) {
+        if (url == null) {
+            return false;
+        }
+        String lowerUrl = url.toLowerCase();
+        return lowerUrl.contains("localhost") || lowerUrl.contains("127.0.0.1") || lowerUrl.contains("[::1]");
+    }
+
+    /**
+     * Create an HTTP client that trusts all certificates (for localhost development only)
+     * Uses system DNS resolver to support custom hosts file entries
+     * Disables hostname verification for self-signed certificates
+     */
+    private HttpClient createInsecureHttpClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                    }
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                    }
+                }
+            };
+
+            // Install the all-trusting trust manager
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            // Create custom SSLParameters that disable endpoint identification (hostname verification)
+            // Using empty string instead of null for better compatibility
+            javax.net.ssl.SSLParameters sslParams = sslContext.getDefaultSSLParameters();
+            sslParams.setEndpointIdentificationAlgorithm(""); // Empty string disables hostname verification
+
+            // Create HTTP client with custom SSL context that disables all verification
+            return HttpClient.newBuilder()
+                .sslContext(sslContext)
+                .sslParameters(sslParams)
+                .connectTimeout(Duration.ofSeconds(30))
+                .proxy(ProxySelector.getDefault()) // Use system proxy settings
+                .build();
+
+        } catch (Exception e) {
+            System.err.println("Failed to create insecure HTTP client: " + e.getMessage());
+            e.printStackTrace();
+            // Fall back to the default secure client
+            return httpClient;
+        }
+    }
+
+    /**
+     * Verify hostname resolution using system DNS before making the request
+     * This ensures custom hosts file entries work properly
+     */
+    private void verifyHostnameResolution(String url) throws UnknownHostException {
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+
+            if (host != null) {
+                // Try to resolve using system DNS (includes hosts file)
+                InetAddress[] addresses = InetAddress.getAllByName(host);
+                System.out.println("Resolved " + host + " to: ");
+                for (InetAddress addr : addresses) {
+                    System.out.println("  - " + addr.getHostAddress());
+                }
+            }
+        } catch (UnknownHostException e) {
+            System.err.println("Failed to resolve hostname: " + e.getMessage());
+            throw e; // Re-throw to let caller handle
         }
     }
 

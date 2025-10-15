@@ -130,23 +130,6 @@ public class CallConfigurationPanel extends JPanel {
         String environment = appState.getSelectedEnvironment();
         Map<String, String> environmentVariables = appState.getEnvironmentVariables();
 
-        // Format headers and body for display
-        StringBuilder headersDisplay = new StringBuilder();
-        headersGroup.getKeyValuePairs().forEach((key, value) ->
-            headersDisplay.append(key).append(": ").append(value).append("\n")
-        );
-        if (headersDisplay.length() == 0) {
-            headersDisplay.append("(No headers)");
-        }
-
-        StringBuilder bodyDisplay = new StringBuilder();
-        bodyGroup.getKeyValuePairs().forEach((key, value) ->
-            bodyDisplay.append(key).append(": ").append(value).append("\n")
-        );
-        if (bodyDisplay.length() == 0) {
-            bodyDisplay.append("(No body)");
-        }
-
         // Create ApiCall object
         ApiCall apiCall = new ApiCall(
             friendlyName,
@@ -162,6 +145,27 @@ public class CallConfigurationPanel extends JPanel {
 
             // Update UI on EDT
             SwingUtilities.invokeLater(() -> {
+                // Format headers and body for display AFTER substitution
+                StringBuilder headersDisplay = new StringBuilder();
+                headersGroup.getKeyValuePairs().forEach((key, value) -> {
+                    String resolvedKey = substituteVariables(key, environmentVariables);
+                    String resolvedValue = substituteVariables(value, environmentVariables);
+                    headersDisplay.append(resolvedKey).append(": ").append(resolvedValue).append("\n");
+                });
+                if (headersDisplay.length() == 0) {
+                    headersDisplay.append("(No headers)");
+                }
+
+                StringBuilder bodyDisplay = new StringBuilder();
+                bodyGroup.getKeyValuePairs().forEach((key, value) -> {
+                    String resolvedKey = substituteVariables(key, environmentVariables);
+                    String resolvedValue = substituteVariables(value, environmentVariables);
+                    bodyDisplay.append(resolvedKey).append(": ").append(resolvedValue).append("\n");
+                });
+                if (bodyDisplay.length() == 0) {
+                    bodyDisplay.append("(No body)");
+                }
+
                 // Show the output in the CallOutputFrame
                 CallOutputFrame outputFrame = CallOutputFrame.getInstance();
                 outputFrame.displayCallOutput(
@@ -183,6 +187,33 @@ public class CallConfigurationPanel extends JPanel {
                 }
             });
         }).start();
+    }
+
+    /**
+     * Substitute {{key}} placeholders with environment variable values
+     */
+    private String substituteVariables(String input, Map<String, String> environmentVariables) {
+        if (input == null || environmentVariables == null) {
+            return input;
+        }
+
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\{\\{([^}]+)\\}\\}");
+        java.util.regex.Matcher matcher = pattern.matcher(input);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String value = environmentVariables.get(key);
+            if (value != null) {
+                matcher.appendReplacement(result, java.util.regex.Matcher.quoteReplacement(value));
+            } else {
+                // Keep the placeholder if no value found
+                matcher.appendReplacement(result, java.util.regex.Matcher.quoteReplacement(matcher.group(0)));
+            }
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 
     private void handleSave() {
