@@ -14,6 +14,7 @@ A privacy-focused, desktop API client built with Java Swing. Test REST APIs, man
 - **⚙️ Configurable Storage**: Set custom storage locations for your JSON files
 - **🔄 Variable Substitution**: Use environment variables in URLs, headers, and body
 - **📊 Response Viewer**: Formatted JSON responses with status codes and timing
+- **📁 API Call Grouping**: Organize your API calls into collapsible groups with drag-and-drop
 - **🚀 Modern UI**: Clean, responsive interface built with FlatLaf
 
 ## 🛠️ Requirements
@@ -120,7 +121,15 @@ java -jar yapmc-1.0-SNAPSHOT.jar
    - Choose which request to import
    - The call will be saved with the filename as its name
 
-5. **Customize Settings**:
+5. **Organize with Groups**:
+   - **Create a group**: Drag one saved API call onto another
+   - You'll be prompted to enter a group name
+   - Both calls will be grouped together under a collapsible header
+   - **Add to existing group**: Drag any call onto a group header or onto a call within that group
+   - **Expand/collapse groups**: Click the group header to show or hide its members
+   - **Remove from group**: Drag a call out of the group onto an ungrouped call
+
+6. **Customize Settings**:
    - Click the "Settings" button in the top-right
    - Choose your preferred theme from the dropdown
    - Optionally set a custom storage location for your JSON files
