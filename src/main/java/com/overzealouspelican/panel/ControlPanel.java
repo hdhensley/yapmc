@@ -3,6 +3,7 @@ package com.overzealouspelican.panel;
 import javax.swing.*;
 import java.awt.*;
 import com.overzealouspelican.frame.EnvironmentFrame;
+import com.overzealouspelican.frame.SettingsFrame;
 import com.overzealouspelican.model.ApplicationState;
 import com.overzealouspelican.model.Environment;
 import com.overzealouspelican.service.EnvironmentService;
@@ -45,17 +46,17 @@ public class ControlPanel extends JPanel {
 
         rightPanel.add(environmentDropdown);
 
-        // Settings button
-        JButton settingsButton = new JButton("Settings");
-        settingsButton.setToolTipText("Application settings");
-        settingsButton.addActionListener(e -> openSettingsFrame());
-        rightPanel.add(settingsButton);
-
         // Manage button
         manageButton = new JButton("Manage");
         manageButton.setToolTipText("Manage environments");
         manageButton.addActionListener(e -> openEnvironmentFrame());
         rightPanel.add(manageButton);
+
+        // Settings button
+        JButton settingsButton = new JButton("Settings");
+        settingsButton.setToolTipText("Application settings");
+        settingsButton.addActionListener(e -> openSettingsFrame());
+        rightPanel.add(settingsButton);
 
         add(rightPanel, BorderLayout.EAST);
 
@@ -71,9 +72,8 @@ public class ControlPanel extends JPanel {
     }
 
     private void openSettingsFrame() {
-        // TODO: Create and open settings frame
-        System.out.println("Settings button clicked - Settings frame not yet implemented");
-        appState.setStatus("Settings", "⚙️");
+        SettingsFrame settingsFrame = new SettingsFrame();
+        settingsFrame.display();
     }
 
     private void loadEnvironmentVariables(String environmentName) {

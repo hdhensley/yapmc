@@ -39,6 +39,13 @@ public class EnvironmentService {
      * Get the application data directory based on the OS
      */
     private Path getDataDirectory() {
+        // Check if custom storage location is configured
+        String customLocation = com.overzealouspelican.frame.SettingsFrame.getStorageLocation();
+        if (customLocation != null && !customLocation.isEmpty()) {
+            return Paths.get(customLocation);
+        }
+
+        // Fall back to default location
         String userHome = System.getProperty("user.home");
         String os = System.getProperty("os.name").toLowerCase();
 
@@ -143,4 +150,3 @@ public class EnvironmentService {
         return environmentsFile.toString();
     }
 }
-
