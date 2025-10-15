@@ -50,6 +50,59 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        // Create and set menu bar
+        setJMenuBar(createMenuBar());
+    }
+
+    /**
+     * Create the application menu bar
+     */
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        // File menu
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic('F');
+
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
+        exitItem.addActionListener(e -> System.exit(0));
+        fileMenu.add(exitItem);
+
+        // Import menu
+        JMenu importMenu = new JMenu("Import");
+        importMenu.setMnemonic('I');
+
+        JMenuItem importCurlItem = new JMenuItem("Import from cURL...");
+        importCurlItem.setAccelerator(KeyStroke.getKeyStroke("ctrl shift C"));
+        importCurlItem.addActionListener(e -> handleImportCurl());
+
+        JMenuItem importHarItem = new JMenuItem("Import from HAR...");
+        importHarItem.setAccelerator(KeyStroke.getKeyStroke("ctrl shift H"));
+        importHarItem.addActionListener(e -> handleImportHar());
+
+        importMenu.add(importCurlItem);
+        importMenu.add(importHarItem);
+
+        menuBar.add(fileMenu);
+        menuBar.add(importMenu);
+
+        return menuBar;
+    }
+
+    /**
+     * Handle importing from cURL command
+     */
+    private void handleImportCurl() {
+        mainContentPanel.getCallConfigurationPanel().showImportCurlDialog();
+    }
+
+    /**
+     * Handle importing from HAR file
+     */
+    private void handleImportHar() {
+        mainContentPanel.getCallConfigurationPanel().showImportHarDialog();
     }
 
     private void layoutComponents() {

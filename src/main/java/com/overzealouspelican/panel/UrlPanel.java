@@ -50,13 +50,6 @@ public class UrlPanel extends JPanel {
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 12f));
         toolbar.add(titleLabel, BorderLayout.WEST);
 
-        // Import button
-        JButton importButton = new JButton("Import");
-        importButton.setToolTipText("Import an API call from JSON file");
-        importButton.setFont(importButton.getFont().deriveFont(11f));
-        importButton.addActionListener(e -> openImportFrame());
-        toolbar.add(importButton, BorderLayout.EAST);
-
         add(toolbar, BorderLayout.NORTH);
 
         // Create scrollable panel for API call items
@@ -390,21 +383,5 @@ public class UrlPanel extends JPanel {
                 appState.setStatusError("Failed to delete call");
             }
         }
-    }
-
-    private void openImportFrame() {
-        ImportFrame importFrame = new ImportFrame();
-        importFrame.display();
-
-        importFrame.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
-                loadApiCallsList();
-            }
-        });
-    }
-
-    public void refresh() {
-        loadApiCallsList();
     }
 }
