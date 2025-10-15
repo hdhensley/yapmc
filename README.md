@@ -2,6 +2,8 @@
 
 A privacy-focused, desktop API client built with Java Swing. Test REST APIs, manage environments, and organize your API calls - all stored locally on your machine.
 
+![YAPMC Screenshot](example-screenshot.png)
+
 ## ✨ Features
 
 - **🔒 Privacy First**: All data stored locally - no cloud, no tracking, no accounts
