@@ -11,11 +11,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
       - name: Build with Maven
         run: mvn clean package
@@ -47,11 +47,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
       - name: Build with Maven
         run: mvn clean package
@@ -81,18 +81,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
 
       - name: Build with Maven
         run: mvn clean package
 
       - name: Create Linux DEB Installer (with jlink workaround)
         run: |
-          # Try jpackage without --runtime-image first (let it use jlink)
+          # Create a custom runtime by copying the full JDK to avoid ct.sym jlink bug in JDK 25
+          cp -r $JAVA_HOME custom-runtime
+          
+          # Use jpackage with the custom runtime to bypass jlink
           jpackage \
             --input target \
             --main-jar yapmc-1.0-SNAPSHOT.jar \
@@ -103,30 +106,10 @@ jobs:
             --vendor "YAPMC" \
             --description "Privacy-focused desktop API client" \
             --java-options '-Xmx512m' \
+            --runtime-image custom-runtime \
             --linux-package-name yapmc \
             --linux-app-category utils \
-            --linux-shortcut && echo "jpackage succeeded" || {
-            echo "jpackage with jlink failed, trying with custom runtime..."
-            
-            # Create a custom runtime by copying the full JDK
-            cp -r $JAVA_HOME custom-runtime
-            
-            # Retry jpackage with the custom runtime
-            jpackage \
-              --input target \
-              --main-jar yapmc-1.0-SNAPSHOT.jar \
-              --main-class com.overzealouspelican.Main \
-              --name yapmc \
-              --type deb \
-              --app-version 1.0 \
-              --vendor "YAPMC" \
-              --description "Privacy-focused desktop API client" \
-              --java-options '-Xmx512m' \
-              --runtime-image custom-runtime \
-              --linux-package-name yapmc \
-              --linux-app-category utils \
-              --linux-shortcut
-          }
+            --linux-shortcut
 
       - name: Upload Linux Installer
         uses: actions/upload-artifact@v4
