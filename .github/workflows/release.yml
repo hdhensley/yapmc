@@ -87,6 +87,40 @@ jobs:
           ls -la *.dmg 2>/dev/null || echo "No .dmg files found with ls *.dmg"
           find . -name "*.dmg" -type f || echo "No .dmg files found with find"
 
+      - name: Ad-hoc sign the DMG (for Gatekeeper compatibility)
+        run: |
+          # Find the DMG file
+          DMG_FILE=$(ls *.dmg | head -n 1)
+          if [ -n "$DMG_FILE" ]; then
+            echo "Found DMG: $DMG_FILE"
+            # Mount the DMG
+            hdiutil attach "$DMG_FILE" -mountpoint /Volumes/YAPMC
+            # Ad-hoc sign the app bundle
+            codesign --force --deep --sign - /Volumes/YAPMC/YAPMC.app
+            # Verify the signature
+            codesign --verify --verbose /Volumes/YAPMC/YAPMC.app
+            # Unmount
+            hdiutil detach /Volumes/YAPMC
+            # Create a new DMG with the signed app
+            rm "$DMG_FILE"
+            jpackage \
+              --input target \
+              --main-jar yapmc-1.0-SNAPSHOT.jar \
+              --main-class com.overzealouspelican.Main \
+              --name YAPMC \
+              --type dmg \
+              --app-version 1.0.0 \
+              --vendor "YAPMC" \
+              --description "Privacy-focused desktop API client" \
+              --java-options '-Xmx512m' \
+              --mac-package-name YAPMC \
+              --mac-sign
+            echo "DMG re-created with ad-hoc signature"
+          else
+            echo "ERROR: No DMG file found to sign"
+            exit 1
+          fi
+
       - name: Upload macOS Installer
         uses: actions/upload-artifact@v4
         with:

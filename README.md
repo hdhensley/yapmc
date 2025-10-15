@@ -53,10 +53,13 @@ All dependencies are automatically managed by Maven. The project uses:
 Download the latest release for your operating system from the [Releases](https://github.com/hdhensley/yapmc/releases) page:
 
 - **Windows**: `YAPMC-1.0.exe` - Double-click to install
-- **macOS**: `YAPMC-1.0.dmg` - Open and drag to Applications folder
+- **macOS**: `YAPMC-1.0.0.dmg` - Open and drag to Applications folder
+  - ⚠️ **macOS users**: You may see a Gatekeeper warning. See [macOS Installation Guide](MACOS_INSTALL.md) for instructions on how to open the app safely.
 - **Linux**: `yapmc_1.0-1_amd64.deb` - Install with `sudo dpkg -i yapmc_1.0-1_amd64.deb`
 
 The installers include a custom JRE, so you don't need Java installed on your system!
+
+**Note**: YAPMC is not notarized by Apple (requires $99/year), so macOS will show a security warning. The app is completely safe - all code is open source and auditable.
 
 #### Option 2: Run the JAR File
 
