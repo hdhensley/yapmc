@@ -35,12 +35,22 @@ jobs:
             --win-dir-chooser `
             --win-menu `
             --win-shortcut
+          
+          Write-Host "=== Files in current directory after jpackage ==="
+          Get-ChildItem
+          Write-Host "=== Looking for EXE files ==="
+          Get-ChildItem -Filter "*.exe" -ErrorAction SilentlyContinue
+          if (-not (Test-Path "YAPMC-*.exe")) {
+            Write-Host "ERROR: No EXE file was created!"
+            exit 1
+          }
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: YAPMC-1.0.exe
+          path: "*.exe"
+          if-no-files-found: error
 
   build-macos:
     runs-on: macos-latest
@@ -118,12 +128,20 @@ jobs:
             --linux-package-name yapmc \
             --linux-app-category utils \
             --linux-shortcut
+          
+          # List all files to see what was created
+          echo "=== Files in current directory after jpackage ==="
+          ls -la
+          echo "=== Looking for DEB files ==="
+          ls -la *.deb 2>/dev/null || echo "No .deb files found with ls *.deb"
+          find . -name "*.deb" -type f || echo "No .deb files found with find"
 
       - name: Upload Linux Installer
         uses: actions/upload-artifact@v4
         with:
           name: linux-installer
-          path: yapmc_1.0-1_amd64.deb
+          path: "*.deb"
+          if-no-files-found: error
 
   create-release:
     needs: [build-windows, build-macos, build-linux]
@@ -134,13 +152,18 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
+      - name: List downloaded artifacts
+        run: |
+          echo "=== Downloaded artifacts structure ==="
+          find . -type f
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            windows-installer/YAPMC-1.0.exe
-            macos-installer/YAPMC-1.0.0.dmg
-            linux-installer/yapmc_1.0-1_amd64.deb
+            windows-installer/*.exe
+            macos-installer/*.dmg
+            linux-installer/*.deb
           draft: false
           prerelease: false
         env:
