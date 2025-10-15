@@ -4,91 +4,153 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: yapmc-linux
-            package_type: deb
-            installer_ext: .deb
-          - os: windows-latest
-            artifact_name: yapmc-windows
-            package_type: exe
-            installer_ext: .exe
-          - os: macos-latest
-            artifact_name: yapmc-macos
-            package_type: dmg
-            installer_ext: .dmg
-
-    runs-on: ${{ matrix.os }}
-
+  build-windows:
+    runs-on: windows-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up JDK 25
-      uses: actions/setup-java@v4
-      with:
-        java-version: '25'
-        distribution: 'temurin'
-        cache: maven
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
-    - name: Build with Maven
-      run: mvn clean package
+      - name: Build with Maven
+        run: mvn clean package
 
-    - name: Create installer with jpackage (Linux/macOS)
-      if: runner.os != 'Windows'
-      run: |
-        jpackage \
-          --input target \
-          --main-jar yapmc-1.0-SNAPSHOT.jar \
-          --main-class com.overzealouspelican.Main \
-          --name YAPMC \
-          --type ${{ matrix.package_type }} \
-          --app-version 1.0.0 \
-          --vendor "YAPMC" \
-          --description "Privacy-focused desktop API client" \
-          --dest installers \
-          --java-options '-Xmx512m'
-      shell: bash
+      - name: Create Windows Installer
+        run: |
+          jpackage `
+            --input target `
+            --main-jar yapmc-1.0-SNAPSHOT.jar `
+            --main-class com.overzealouspelican.Main `
+            --name YAPMC `
+            --type exe `
+            --app-version 1.0.0 `
+            --vendor "YAPMC" `
+            --description "Privacy-focused desktop API client" `
+            --java-options '-Xmx512m' `
+            --win-dir-chooser `
+            --win-menu `
+            --win-shortcut
 
-    - name: Create installer with jpackage (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        jpackage `
-          --input target `
-          --main-jar yapmc-1.0-SNAPSHOT.jar `
-          --main-class com.overzealouspelican.Main `
-          --name YAPMC `
-          --type ${{ matrix.package_type }} `
-          --app-version 1.0.0 `
-          --vendor "YAPMC" `
-          --description "Privacy-focused desktop API client" `
-          --dest installers `
-          --java-options '-Xmx512m'
-      shell: powershell
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: YAPMC-1.0.exe
 
-    - name: List generated files
-      run: ls -R installers
-      shell: bash
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact_name }}
-        path: installers/*${{ matrix.installer_ext }}
-        if-no-files-found: error
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
-    - name: Upload to Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: installers/*${{ matrix.installer_ext }}
-        fail_on_unmatched_files: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Create macOS Installer
+        run: |
+          jpackage \
+            --input target \
+            --main-jar yapmc-1.0-SNAPSHOT.jar \
+            --main-class com.overzealouspelican.Main \
+            --name YAPMC \
+            --type dmg \
+            --app-version 1.0.0 \
+            --vendor "YAPMC" \
+            --description "Privacy-focused desktop API client" \
+            --java-options '-Xmx512m' \
+            --mac-package-name YAPMC
+
+      - name: Upload macOS Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: YAPMC-1.0.dmg
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Create Linux DEB Installer (with jlink workaround)
+        run: |
+          # Try jpackage without --runtime-image first (let it use jlink)
+          jpackage \
+            --input target \
+            --main-jar yapmc-1.0-SNAPSHOT.jar \
+            --main-class com.overzealouspelican.Main \
+            --name yapmc \
+            --type deb \
+            --app-version 1.0 \
+            --vendor "YAPMC" \
+            --description "Privacy-focused desktop API client" \
+            --java-options '-Xmx512m' \
+            --linux-package-name yapmc \
+            --linux-app-category utils \
+            --linux-shortcut && echo "jpackage succeeded" || {
+            echo "jpackage with jlink failed, trying with custom runtime..."
+            
+            # Create a custom runtime by copying the full JDK
+            cp -r $JAVA_HOME custom-runtime
+            
+            # Retry jpackage with the custom runtime
+            jpackage \
+              --input target \
+              --main-jar yapmc-1.0-SNAPSHOT.jar \
+              --main-class com.overzealouspelican.Main \
+              --name yapmc \
+              --type deb \
+              --app-version 1.0 \
+              --vendor "YAPMC" \
+              --description "Privacy-focused desktop API client" \
+              --java-options '-Xmx512m' \
+              --runtime-image custom-runtime \
+              --linux-package-name yapmc \
+              --linux-app-category utils \
+              --linux-shortcut
+          }
+
+      - name: Upload Linux Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-installer
+          path: yapmc_1.0-1_amd64.deb
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            windows-installer/YAPMC-1.0.exe
+            macos-installer/YAPMC-1.0.dmg
+            linux-installer/yapmc_1.0-1_amd64.deb
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
