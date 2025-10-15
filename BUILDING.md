@@ -3,9 +3,9 @@
 ## Quick Build Guide
 
 ### Prerequisites
-- **Recommended**: JDK 21 (LTS) - most stable for jpackage
-- **Alternative**: JDK 17, 22, 23, or 24
-- **Avoid**: JDK 25 - has known jlink/jpackage bugs
+- **Recommended**: JDK 25 - Latest version with modern features
+- **Minimum**: JDK 17 (LTS)
+- **Maven Compiler Plugin**: 3.13.0+ (automatically configured in pom.xml for Java 25 support)
 
 ### Standard Build
 
@@ -55,7 +55,13 @@ jpackage `
 
 ### Linux (DEB)
 
+**Note**: JDK 25 has a known jlink bug on Linux. Use the workaround below:
+
 ```bash
+# Create a custom runtime by copying the full JDK
+cp -r $JAVA_HOME custom-runtime
+
+# Use jpackage with the custom runtime to bypass jlink
 jpackage \
   --input target \
   --main-jar yapmc-1.0-SNAPSHOT.jar \
@@ -66,6 +72,7 @@ jpackage \
   --vendor "YAPMC" \
   --description "Privacy-focused desktop API client" \
   --java-options '-Xmx512m' \
+  --runtime-image custom-runtime \
   --linux-package-name yapmc \
   --linux-app-category utils \
   --linux-shortcut
@@ -73,26 +80,13 @@ jpackage \
 
 ## Troubleshooting jpackage/jlink Errors
 
-### Error: "ct.sym has been modified" or jlink fails
+### Error: "ct.sym has been modified" or jlink fails (JDK 25 on Linux)
 
-This is a known bug in JDK 25 and some JDK installations. Here are the solutions:
+This is a known bug in JDK 25's jlink implementation on Linux.
 
-#### Solution 1: Use JDK 21 (Recommended)
+#### Solution: Use --runtime-image (Recommended for JDK 25)
 
-Switch to JDK 21 LTS, which doesn't have this bug:
-
-```bash
-# Check your current Java version
-java -version
-
-# Download JDK 21 from:
-# - https://adoptium.net/ (Temurin)
-# - https://www.oracle.com/java/technologies/downloads/
-```
-
-#### Solution 2: Use --runtime-image (Workaround)
-
-If you must use JDK 25 or encounter the error with JDK 21, bypass jlink:
+Bypass jlink by providing a pre-built runtime:
 
 ```bash
 # Copy your JDK to use as a custom runtime
@@ -115,47 +109,19 @@ jpackage \
   --linux-shortcut
 ```
 
-**Note**: This creates a larger installer since it includes the full JDK instead of a minimal runtime.
+**Note**: This creates a larger installer (~300MB) since it includes the full JDK instead of a minimal runtime (~50MB).
 
-#### Solution 3: Create Minimal Runtime (Advanced)
+### Error: "release version 25 not supported"
 
-If you want a smaller installer but jlink fails, try creating a minimal runtime with only required modules:
+This happens with older Maven compiler plugin versions.
 
-```bash
-# List modules your app needs
-java --list-modules | grep -E "java.base|java.desktop|java.logging|java.net.http"
+#### Solution: Upgrade maven-compiler-plugin
 
-# Create minimal runtime (adjust modules as needed)
-jlink \
-  --add-modules java.base,java.desktop,java.logging,java.net.http,java.sql,java.xml \
-  --strip-debug \
-  --no-man-pages \
-  --no-header-files \
-  --compress=2 \
-  --output custom-runtime
+The project's pom.xml already uses version 3.13.0 which supports Java 25. If you see this error:
 
-# If jlink fails, fall back to copying the full JDK
-if [ $? -ne 0 ]; then
-  echo "jlink failed, using full JDK runtime"
-  cp -r $JAVA_HOME custom-runtime
-fi
-
-# Then use with jpackage
-jpackage \
-  --input target \
-  --main-jar yapmc-1.0-SNAPSHOT.jar \
-  --main-class com.overzealouspelican.Main \
-  --name yapmc \
-  --type deb \
-  --app-version 1.0 \
-  --vendor "YAPMC" \
-  --description "Privacy-focused desktop API client" \
-  --java-options '-Xmx512m' \
-  --runtime-image custom-runtime \
-  --linux-package-name yapmc \
-  --linux-app-category utils \
-  --linux-shortcut
-```
+1. Ensure you're using the latest pom.xml from the repository
+2. Clean your Maven cache: `mvn clean`
+3. Rebuild: `mvn package`
 
 ### Other Common Issues
 
@@ -226,4 +192,3 @@ yapmc
 - [jpackage Documentation](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jpackage.html)
 - [jlink Documentation](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jlink.html)
 - [OpenJDK jpackage Guide](https://openjdk.org/jeps/392)
-

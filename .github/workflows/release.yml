@@ -69,12 +69,20 @@ jobs:
             --description "Privacy-focused desktop API client" \
             --java-options '-Xmx512m' \
             --mac-package-name YAPMC
+          
+          # List all files to see what was created
+          echo "=== Files in current directory after jpackage ==="
+          ls -la
+          echo "=== Looking for DMG files ==="
+          ls -la *.dmg 2>/dev/null || echo "No .dmg files found with ls *.dmg"
+          find . -name "*.dmg" -type f || echo "No .dmg files found with find"
 
       - name: Upload macOS Installer
         uses: actions/upload-artifact@v4
         with:
           name: macos-installer
-          path: YAPMC-1.0.dmg
+          path: "*.dmg"
+          if-no-files-found: error
 
   build-linux:
     runs-on: ubuntu-latest
@@ -131,7 +139,7 @@ jobs:
         with:
           files: |
             windows-installer/YAPMC-1.0.exe
-            macos-installer/YAPMC-1.0.dmg
+            macos-installer/YAPMC-1.0.0.dmg
             linux-installer/yapmc_1.0-1_amd64.deb
           draft: false
           prerelease: false
