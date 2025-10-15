@@ -48,7 +48,7 @@ All dependencies are automatically managed by Maven. The project uses:
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone git@github.com:hdhensley/yapmc.git
    cd yapmc
    ```
 
