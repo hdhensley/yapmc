@@ -225,7 +225,7 @@ The application follows SOLID principles with a modular design:
 
 ## 🏗️ Building Installers
 
-The project uses GitHub Actions with `jlink` and `jpackage` to create native installers for all platforms.
+The project uses GitHub Actions with `jpackage` to create native installers for all platforms.
 
 ### Automated Builds (via GitHub Actions)
 
@@ -244,26 +244,17 @@ To create an installer on your local machine:
 # Build the project
 mvn clean package
 
-# Create a custom JRE with jlink
-jlink \
-  --add-modules java.base,java.desktop,java.prefs,java.logging,java.net.http,java.naming \
-  --output target/runtime \
-  --strip-debug \
-  --no-man-pages \
-  --no-header-files \
-  --compress=2
-
 # Create the installer with jpackage
 jpackage \
-  --runtime-image target/runtime \
   --input target \
-  --name YAPMC \
   --main-jar yapmc-1.0-SNAPSHOT.jar \
   --main-class com.overzealouspelican.Main \
+  --name YAPMC \
   --type dmg \
-  --app-version 1.0 \
+  --app-version 1.0.0 \
   --vendor "YAPMC" \
-  --description "Privacy-focused desktop API client"
+  --description "Privacy-focused desktop API client" \
+  --java-options '-Xmx512m'
 ```
 
 Replace `--type dmg` with:
@@ -271,12 +262,12 @@ Replace `--type dmg` with:
 - `deb` or `rpm` for Linux
 - `dmg` or `pkg` for macOS
 
-### Benefits of jlink + jpackage
+### Benefits of jpackage
 
-- **Self-contained**: Installers include a custom JRE (no Java installation required)
-- **Small size**: jlink creates a minimal runtime (~50-70% smaller than full JDK)
+- **Self-contained**: Installers include a bundled JRE (no Java installation required)
 - **Native experience**: Users get familiar installation process for their OS
-- **Automatic updates**: Easy to distribute new versions
+- **Cross-platform**: Single command works on all operating systems
+- **Easy distribution**: Simple to share and install
 
 ## 🔐 Security Note
 
