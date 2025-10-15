@@ -41,9 +41,10 @@ jobs:
     - name: Build with Maven
       run: mvn clean package
 
-    - name: Create custom runtime with jlink
+    - name: Create custom runtime with jlink (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
-        jlink \
+        $JAVA_HOME/bin/jlink \
           --add-modules java.base,java.desktop,java.prefs,java.logging,java.net.http,java.naming \
           --output target/runtime \
           --strip-debug \
@@ -52,10 +53,22 @@ jobs:
           --compress=2
       shell: bash
 
+    - name: Create custom runtime with jlink (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        & "$env:JAVA_HOME\bin\jlink.exe" `
+          --add-modules java.base,java.desktop,java.prefs,java.logging,java.net.http,java.naming `
+          --output target/runtime `
+          --strip-debug `
+          --no-man-pages `
+          --no-header-files `
+          --compress=2
+      shell: powershell
+
     - name: Create installer with jpackage (Linux/macOS)
       if: runner.os != 'Windows'
       run: |
-        jpackage \
+        $JAVA_HOME/bin/jpackage \
           --runtime-image target/runtime \
           --input target \
           --name YAPMC \
@@ -71,7 +84,7 @@ jobs:
     - name: Create installer with jpackage (Windows)
       if: runner.os == 'Windows'
       run: |
-        jpackage `
+        & "$env:JAVA_HOME\bin\jpackage.exe" `
           --runtime-image target/runtime `
           --input target `
           --name YAPMC `
@@ -103,4 +116,3 @@ jobs:
         fail_on_unmatched_files: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
